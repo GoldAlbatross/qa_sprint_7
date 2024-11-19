@@ -1,30 +1,20 @@
-import io.qameta.allure.Step;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class TestGetOrderList {
+public class TestGetOrderList extends EzScooterApi {
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
-    }
+    private final String ordersEndpoint = "/api/v1/orders";
+    private final EzScooterRequests requests = new EzScooterRequests();
+
     @Test
     public void verifyGetOrdersList() {
-        getOrdersList();
-    }
-    @Step("Запрос на получение списка заказов")
-    public void getOrdersList() {
-        given()
-                .header("Content-Type", "application/json")
-                .when()
-                .get("/api/v1/orders")
-                .then()
-                .statusCode(200)
-                .body("orders", is(not(empty())))
-                .body("orders", is(instanceOf(java.util.List.class)));
+        Response orderList = requests.getOrdersList(ordersEndpoint);
+        orderList.then().statusCode(200);
+       orderList.then().body("orders", is(not(empty())));
+       orderList.then().body("orders", is(instanceOf(java.util.List.class)));
     }
 }

@@ -1,101 +1,57 @@
-import io.qameta.allure.Step;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import org.example.Courier;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class TestCourierLogin {
+public class TestCourierLogin extends EzScooterApi {
 
     private int id;
-    private String login = "uniqueCourier2";
-    private String password = "password123";
-    private String firstName = "John";
+    private final String login = "courierUniqueLogin";
+    private final String password = "password123";
+    private final String firstName = "John";
+    private final EzScooterRequests requests = new EzScooterRequests();
+    private final String postCreateCourier = "/api/v1/courier";
+    private final String postCourierAutorization = "/api/v1/courier/login";
+    private final String postDeleteCourier = "/api/v1/courier/";
+    private Courier courier;
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
+    @After
+    public void tearDown() {
+        requests.deleteCourier(courier, postDeleteCourier);
     }
+
     @Test
-    public void verifyCourierAuthorization() {
-        createCourier();
-        courierAuthorization();
-        deleteCourier();
+    public void verifyCourierIncorrectLogin() {
+        courier = new Courier(login, password, firstName);
+        requests.createCourier(courier, postCreateCourier);
+        Courier courierWithWrongLogin = new Courier("123", password, firstName);
+        Response incorrectLogin = requests.incorrectLogin(courierWithWrongLogin, postCourierAutorization);
+        incorrectLogin.then().statusCode(404);
+        incorrectLogin.then().body("message", equalTo("Учетная запись не найдена"));
     }
+
     @Test
-    public void verifyIncorrectLogin() {
-        createCourier();
-        incorrectLogin();
-        getId();
-        deleteCourier();
+    public void verifyCorrectAuthorization() {
+        courier = new Courier(login, password, firstName);
+        requests.createCourier(courier, postCreateCourier);
+        Response correctAuthorization = requests.courierAuthorization(courier, postCourierAutorization);
+        correctAuthorization.then().statusCode(200);
+        correctAuthorization.then().body("id", notNullValue());
+
     }
+
     @Test
     public void verifyAuthorizationWithoutLogin() {
-        createCourier();
-        authorizationWithoutLogin();
-        getId();
-        deleteCourier();
-    }
-    @Step("Создаем курьера")
-    private void createCourier() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"" + firstName + "\" }")
-                .when()
-                .post("/api/v1/courier");
-    }
-    @Step("Удаляем курьера по id")
-    private void deleteCourier() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"id\": \"" + id + "\" }")
-                .when()
-                .delete("/api/v1/courier/" + id);
-    }
-    @Step("Получаем id для удаления курьера")
-    private void getId() {
-        id = given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\" }")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .extract().path("id");
-    }
-    @Step("Запрос на авторизацию")
-    public void courierAuthorization() {
-        id = given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\" }")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(200)
-                .body("id", notNullValue())
-                .extract().path("id");
-    }
-    @Step("Запрос на авторизацию с не верным логином")
-    public void incorrectLogin() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + (login + "1") + "\", \"password\": \"" + password + "\" }")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(404)
-                .body("message", equalTo("Учетная запись не найдена"));
-    }
-    @Step("Запрос на авторизацию без логина")
-    public void authorizationWithoutLogin() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"password\": \"" + password + "\" }")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .statusCode(400)
-                .body("message", equalTo("Недостаточно данных для входа"));
+        courier = new Courier(login, password, firstName);
+        requests.createCourier(courier, postCreateCourier);
+        Courier courierWithOutLogin = new Courier(null, password, firstName);
+        Response authorizationWithoutLogin = requests.authorizationWithoutLogin(courierWithOutLogin, postCourierAutorization);
+        authorizationWithoutLogin.then().statusCode(400);
+        authorizationWithoutLogin.then().body("message", equalTo("Недостаточно данных для входа"));
     }
 }

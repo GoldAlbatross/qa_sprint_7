@@ -1,96 +1,52 @@
 import io.qameta.allure.Step;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import org.example.Courier;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.proxy;
 import static org.hamcrest.Matchers.equalTo;
 
-public class TestCreateCourier {
+public class TestCreateCourier extends EzScooterApi {
 
     private int id;
-    private String login = "uniqueCourier2";
-    private String password = "password123";
-    private String firstName = "John";
+    private final String login = "courierUniqueLogin";
+    private final String password = "password123";
+    private final String firstName = "John";
+    private final EzScooterRequests requests = new EzScooterRequests();
+    private final String postCreateCourier = "/api/v1/courier";
+    private final String postCourierAutorization = "/api/v1/courier/login";
+    private final String postDeleteCourier = "/api/v1/courier/";
+    private Courier courier;
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
+    @After
+    public void tearDown() {
+        requests.deleteCourier(courier, postDeleteCourier);
     }
 
     @Test
     public void verifyCreateUniqueCourier() {
-        createUniqueCourier();
-        getId();
-        deleteCourier();
+        courier = new Courier(login, password, firstName);
+        Response createCourier = requests.createCourier(courier, postCreateCourier);
+        createCourier.then().statusCode(201);
+        createCourier.then().body("ok", equalTo(true));
     }
     @Test
     public void verifyCreateIdenticalCouriers() {
-        createIdenticalCouriers();
-        getId();
-        deleteCourier();
+        courier = new Courier(login, password, firstName);
+        requests.createCourier(courier, postCreateCourier);
+        Response createIdenticalCourier = requests.createCourier(courier, postCreateCourier);
+        createIdenticalCourier.then().statusCode(409);
+        createIdenticalCourier.then().body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
     }
     @Test
     public void verifyCreateCourierWithoutLogin() {
-        createCourierWithoutLogin();
-    }
-
-    @Step("Удаление курьера по id")
-    private void deleteCourier() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"id\": \"" + id + "\" }")
-                .when()
-                .delete("/api/v1/courier/" + id);
-    }
-    @Step("Получение id для удаления")
-    private void getId() {
-        id = given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\" }")
-                .when()
-                .post("/api/v1/courier/login")
-                .then()
-                .extract().path("id");
-    }
-
-    @Step("Запрос на создание курьера")
-    public void createUniqueCourier() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"" + firstName + "\" }")
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .statusCode(201)
-                .body("ok", equalTo(true));
-    }
-    @Step("Создание одинаковых курьеров")
-    public void createIdenticalCouriers() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"" + firstName + "\" }")
-                .when()
-                .post("/api/v1/courier");
-
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"password\": \"" + password + "\", \"firstName\": \"" + firstName + "\" }")
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .statusCode(409)
-                .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
-    }
-    @Step("Запрос на создание курьера без поля пароль")
-    public void createCourierWithoutLogin() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"login\": \"" + login + "\", \"firstName\": \"" + firstName + "\" }")
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .statusCode(400) // Проверяем код ответа 400 Bad Request
-                .body("message", equalTo("Недостаточно данных для создания учетной записи")); // Проверяем сообщение об ошибке
+        courier = new Courier(null, password, firstName);
+        Response createCourier = requests.createCourier(courier, postCreateCourier);
+        createCourier.then().statusCode(400);
+        createCourier.then().body("message", equalTo("Недостаточно данных для создания учетной записи"));
     }
 }

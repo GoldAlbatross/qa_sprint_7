@@ -1,63 +1,42 @@
 import io.qameta.allure.Step;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import org.example.Order;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-public class TestCreateOrder {
+@RunWith(Parameterized.class)
+public class TestCreateOrder extends EzScooterApi {
 
-    private String colorBlack = "BLACK";
-    private String colorGrey = "GREY";
+    private final EzScooterRequests requests = new EzScooterRequests();
+    private final String postCreateOrder = "/api/v1/orders";
+    private String[] colors;
 
-    @Before
-    public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
+    public TestCreateOrder(String[] colors) {
+        this.colors = colors;
     }
+
+    @Parameterized.Parameters
+    public static Object[] data() {
+        return new Object[][]{
+                {new String[]{"BLACK"}},
+                {new String[]{"BLACK", "GREY"}},
+                {new String[]{"BLACK"}},
+                {new String[]{"GREY"}}
+        };
+    }
+
     @Test
-    public void verifyCreateOrderWithOneColor() {
-        createOrderWithOneColor();
-    }
-    @Test
-    public void verifyCreateOrderWithoutColor() {
-        createOrderWithoutColor();
-    }
-    @Test
-    public void verifyCreateOrderWithBothColors() {
-        createOrderWithBothColors();
-    }
-    @Step("Запрос на создание заказа с одним цветом")
-    public void createOrderWithOneColor() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"color\": [\"" + colorBlack + "\"] }")
-                .when()
-                .post("/api/v1/orders")
-                .then()
-                .statusCode(201)
-                .body("track", notNullValue());
-    }
-    @Step("Запрос на создание заказа с обоими цветами")
-    public void createOrderWithBothColors() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{ \"color\": [\"" + colorBlack + "\", \"" + colorGrey + "\"] }")
-                .when()
-                .post("/api/v1/orders")
-                .then()
-                .statusCode(201)
-                .body("track", notNullValue());
-    }
-    @Step("Запрос на создание заказа без цвета")
-    public void createOrderWithoutColor() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("{}") // Тело без указания цвета
-                .when()
-                .post("/api/v1/orders")
-                .then()
-                .statusCode(201)
-                .body("track", notNullValue());
+    public void testCreateOrder() {
+        Order order = new Order(colors);
+        Response createOrder = requests.createOrder(order, postCreateOrder);
+        createOrder.then().statusCode(201);
+        createOrder.then().body("track", notNullValue());
     }
 }
