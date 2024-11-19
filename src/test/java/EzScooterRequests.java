@@ -103,15 +103,4 @@ public class EzScooterRequests {
                 .when()
                 .get(post);
     }
-
-//    public void getOrdersList() {
-//        given()
-//                .header("Content-Type", "application/json")
-//                .when()
-//                .get("/api/v1/orders")
-//                .then()
-//                .statusCode(200)
-//                .body("orders", is(not(empty())))
-//                .body("orders", is(instanceOf(java.util.List.class)));
-//    }
 }
