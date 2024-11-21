@@ -38,4 +38,10 @@ public class Courier {
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
+
+    public Boolean isFieldInitialized() {
+        return login != null
+                && password != null
+                && firstName != null;
+    }
 }

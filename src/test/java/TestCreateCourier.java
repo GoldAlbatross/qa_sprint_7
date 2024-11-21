@@ -1,4 +1,3 @@
-import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.example.Courier;
@@ -8,19 +7,23 @@ import org.junit.Test;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.proxy;
+import static org.example.PostsForCourier.postCreateCourier;
+import static org.example.PostsForCourier.postDeleteCourier;
 import static org.hamcrest.Matchers.equalTo;
 
-public class TestCreateCourier extends EzScooterApi {
+public class TestCreateCourier {
 
     private int id;
     private final String login = "courierUniqueLogin";
     private final String password = "password123";
     private final String firstName = "John";
-    private final EzScooterRequests requests = new EzScooterRequests();
-    private final String postCreateCourier = "/api/v1/courier";
-    private final String postCourierAutorization = "/api/v1/courier/login";
-    private final String postDeleteCourier = "/api/v1/courier/";
+    private final CourierRequests requests = new CourierRequests();
     private Courier courier;
+
+    @Before
+    public void setUp() {
+        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
+    }
 
     @After
     public void tearDown() {
